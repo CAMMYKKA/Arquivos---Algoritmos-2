@@ -8,55 +8,12 @@ struct banco{
     float saldo;
 };
 
-int cadastro(struct banco banco[], int qtdcontas, int max){
-    int i, tipo_conta;
+int cadastro(struct banco banco[], int qtdcontas, int n_conta, int saldo, char* titular, char* segtitular){
 
-    if(qtdcontas >= max){
-        printf("Limite de contas atingido!\n");
-        return qtdcontas;
-    }
-
-    printf("Digite o numero da conta: ");
-    scanf("%d" , &banco[qtdcontas].n_conta);
-
-    for(i = 0; i < qtdcontas; i++){
-        if(banco[qtdcontas].n_conta == banco[i].n_conta){
-            printf("Número da conta já existe! Cadastro cancelado.\n");
-            return qtdcontas;
-        }
-    }
-
-    getchar();
-    printf("Digite o nome do titular: ");            
-    fgets(banco[qtdcontas].titular, 50, stdin);
-
-    printf("Qual o tipo de conta?");
-    printf("\n1 - Individual | 2 - Conjunta \n");
-    scanf("%d" , &tipo_conta);
-
-    while(tipo_conta != 1 && tipo_conta != 2){
-        printf("\nOpcao invalida! Digite novamente: ");
-        scanf("%d" , &tipo_conta);
-    }
-        
-    if(tipo_conta == 1){
-        banco[qtdcontas].segtitular[0] = '\0';
-    }else{
-        printf("Nome do segundo titular: ");
-        getchar();
-        fgets(banco[qtdcontas].segtitular, 50, stdin);
-                
-        if(strcmp(banco[qtdcontas].segtitular, banco[qtdcontas].titular) == 0){
-            printf("Os nomes não podem ser iguais! Cadastro cancelado!");
-            return qtdcontas;
-        }
-    }
-    
-    printf("Digite o saldo da conta: ");
-    scanf("%f" , &banco[qtdcontas].saldo);
-    getchar();
-    
-    printf("Conta cadastrada com sucesso!\n");
+    strcpy(banco[qtdcontas].titular, titular);
+    strcpy(banco[qtdcontas].segtitular, segtitular);
+    banco[qtdcontas].saldo = saldo;
+    banco[qtdcontas].n_conta = n_conta;
     return qtdcontas + 1;
 }
 
@@ -67,10 +24,7 @@ int cadastroArquivo(struct banco banco[], int *qtdcontas, int max) {
         printf("Erro ao abrir o arquivo de contas!\n");
         return *qtdcontas;
     }
-
     struct banco temp;
-    
-    
     while (i < max && fscanf(arquivo, "%d\n", &banco[i].n_conta) == 1) {
         
         fgets(banco[i].titular, sizeof(banco[i].titular), arquivo);
@@ -79,7 +33,6 @@ int cadastroArquivo(struct banco banco[], int *qtdcontas, int max) {
         fgets(banco[i].segtitular, sizeof(banco[i].segtitular), arquivo);
         banco[i].segtitular[strcspn(banco[i].segtitular, "\n")] = '\0';  
 
-    
         fscanf(arquivo, "%f\n", &banco[i].saldo);
         
         i++; 
@@ -88,8 +41,6 @@ int cadastroArquivo(struct banco banco[], int *qtdcontas, int max) {
     fclose(arquivo);
 
     *qtdcontas = i;
-    
-    printf("Contas do arquivo cadastradas com sucesso!\n");
     return *qtdcontas;
 }
 
@@ -103,13 +54,13 @@ void salvar_contas(struct banco banco[], int qtdcontas) {
     fwrite(&qtdcontas, sizeof(int), 1, arquivo);
     fwrite(banco, sizeof(struct banco), qtdcontas, arquivo);
     fclose(arquivo);
-    printf("Contas salvas com sucesso!\n");
+    
 }
 
 void carregar_contas(struct banco banco[], int max, int *qtdcontas) {
     FILE *arquivo = fopen("contas.bin", "rb");  
     if (arquivo == NULL) {
-        printf("\nNenhum arquivo de agentes encontrado, iniciando vazio.");
+        printf("\nNenhum arquivo de contas encontrado, iniciando vazio.");
         return;  
     }
     
@@ -127,29 +78,7 @@ void carregar_contas(struct banco banco[], int max, int *qtdcontas) {
     printf("Contas carregadas com sucesso!\n");
 }
 
-int excluir_contas(struct banco banco[], int qtdcontas){
-    int escolha = 0, num = 0;
-
-    if(qtdcontas == 0){
-        printf("Nenhum agente cadastrado!");
-        return qtdcontas;
-    }
-    
-    for(int i = 0; i < qtdcontas; i++){
-        printf("\n%d. Titular:  %s | Segundo titular: %s [numero da conta: %d | saldo: %.2f]\n" , i + 1, banco[i].titular,banco[i].segtitular, banco[i].n_conta, banco[i].saldo);
-    }
-    printf("Selecione a conta a ser excluida: ");
-    scanf("%d" , &escolha);
-
-    if(escolha < 1 || escolha > qtdcontas){
-        printf("Invalido.\n");
-        return qtdcontas;
-    }
-    
-    printf("Confirmar exclusao da conta?");
-    printf("\n1.Sim");
-    printf("\n2.Nao");
-    scanf("%d" , &num);
+int excluir_contas(struct banco banco[], int qtdcontas, int num, int escolha){
 
     if(num == 1){
         for(int i = (escolha - 1); i < qtdcontas; i++){
@@ -212,7 +141,12 @@ int main(void){
     int opcao_menu = 0;
     int qtdcontas = 0; 
     int max = 300;
-    int escolha = 0;
+    int escolha = 0, num;
+    int i = 0;
+    int n_conta;
+    int tipo_conta;
+    float saldo;
+    char titular[50], segtitular[50];
 
     struct banco banco[max];
     carregar_contas(banco, max, &qtdcontas);
@@ -232,22 +166,95 @@ int main(void){
 
         switch(opcao_menu){
             case 1: 
-                qtdcontas = cadastro(banco, qtdcontas, max);
+
+                if(qtdcontas >= max){
+                    printf("Limite de contas atingido!\n");
+                    return qtdcontas;
+                }
+            
+                printf("Digite o numero da conta: ");
+                scanf("%d" , &n_conta);
+            
+                for(i = 0; i < qtdcontas; i++){
+                    if(n_conta == banco[i].n_conta){
+                        printf("Numero da conta ja existe! Cadastro cancelado.\n");
+                        return qtdcontas;
+                    }
+                }
+
+                getchar();
+                printf("Digite o nome do titular: ");            
+                fgets(titular, 50, stdin);
+                titular[strcspn(titular, "\n")] = '\0';
+
+                printf("Qual o tipo de conta?");
+                printf("\n1 - Individual | 2 - Conjunta \n");
+                scanf("%d" , &tipo_conta);
+
+                while(tipo_conta != 1 && tipo_conta != 2){
+                    printf("\nOpcao invalida! Digite novamente: ");
+                    scanf("%d" , &tipo_conta);
+                }
+
+                if(tipo_conta == 1){
+                    segtitular[0] = '\0';
+                }else{
+                    printf("Nome do segundo titular: ");
+                    getchar();
+                    fgets(segtitular, 50, stdin);
+                            
+                    if(strcmp(segtitular, titular) == 0){
+                        printf("Os nomes não podem ser iguais! Cadastro cancelado!");
+                        return qtdcontas;
+                    }
+                }
+
+                printf("Digite o saldo da conta: ");
+                scanf("%f" , &saldo);
+                getchar();
+                
+                qtdcontas = cadastro(banco,qtdcontas, n_conta, saldo,titular, segtitular);
+
+                printf("Conta cadastrada com sucesso!\n");
                 break;
+
             case 2:
                 qtdcontas = cadastroArquivo(banco, &qtdcontas, max);
+                printf("Contas do arquivo cadastradas com sucesso!\n");
                 break;
             case 3:
                 consulta_conta(banco, qtdcontas);
                 break;
             case 4:
-                qtdcontas = excluir_contas(banco, qtdcontas);
+                if(qtdcontas == 0){
+                    printf("Nenhuma conta cadastrado!");
+                    return qtdcontas;
+                }
+                
+                for(int i = 0; i < qtdcontas; i++){
+                    printf("\n%d. Titular: %s | Segundo titular: %s \n[numero da conta: %d | saldo: %.2f]" , i + 1, banco[i].titular,banco[i].segtitular, banco[i].n_conta, banco[i].saldo);
+                }
+                printf("\nSelecione a conta a ser excluida: ");
+                scanf("%d" , &escolha);
+            
+                if(escolha < 1 || escolha > qtdcontas){
+                    printf("Invalido.\n");
+                    return qtdcontas;
+                }
+                
+                printf("Confirmar exclusao da conta?");
+                printf("\n1.Sim");
+                printf("\n2.Nao");
+                scanf("%d" , &num);
+                qtdcontas = excluir_contas(banco, qtdcontas, num, escolha);
                 break;
+
             case 5:
                 ver_contas(banco, qtdcontas);
                 break;
             case 6:
                 salvar_contas(banco, qtdcontas);
+                printf("Contas salvas com sucesso!\n");
                 break;
             case 7:
             
@@ -261,7 +268,7 @@ int main(void){
                     return 0;
                 }
                 if(escolha == 2){
-                    printf("Saindo sem fechar...");
+                    printf("Saindo sem salvar...");
                     return 0;
                 }else if(escolha != 1 && escolha != 2){
                     printf("Escolha invalida! Digite novamente: ");
